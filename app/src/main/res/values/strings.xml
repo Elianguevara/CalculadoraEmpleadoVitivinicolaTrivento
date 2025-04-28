@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Calculadora Salario</string>
+
+    <string name="app_title">Calculadora Salario Trivento</string>
+
+    <string name="section_inputs">Ingresar Datos</string>
+    <string name="section_results">Desglose del Salario</string>
+
+    <string name="label_category">Selecciona Categoría</string>
+    <string name="label_seniority">Selecciona Antigüedad</string>
+    <string name="label_overtime_100">Horas Extras al 100%</string>
+    <string name="label_overtime_50">Horas Extras al 50%</string>
+    <string name="button_calculate">Calcular Salario</string>
+
+    <string name="years_template">%d años</string> <string name="result_base_salary">Salario Básico Calculado</string>
+    <string name="result_seniority_bonus">Adicional Antigüedad</string>
+    <string name="result_presenteeism">Adicional Presentismo</string>
+    <string name="result_art4">Adicional Comp. Anual Art 4°</string>
+    <string name="result_trivento1">Adicional Incentivo Trivento 1</string>
+    <string name="result_trivento2">Adicional Incentivo Trivento 2</string>
+    <string name="result_gross_subtotal">Subtotal Bruto Remunerativo</string>
+    <string name="result_deduction_solidarity">Aporte Solidario (-)</string>
+    <string name="result_deduction_law">Descuentos Ley (Jub/OS/Ley) (-)</string>
+    <string name="result_deduction_funeral">Subsidio Sepelio (-)</string>
+    <string name="result_net_rem_subtotal">Subtotal Neto Remunerativo</string>
+    <string name="result_non_remunerative">Adicional No Remunerativo</string>
+    <string name="result_meal_allowance">Refrigerio</string>
+    <string name="result_overtime_50">Pago Horas Extras 50%</string>
+    <string name="result_overtime_100">Pago Horas Extras 100%</string>
+    <string name="result_final_net">SALARIO NETO FINAL</string>
+
+    <string name="author_name">By Elian Guevara</string>
+</resources>
