@@ -107,49 +107,53 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
         // 4. Adicional Compensación Anual Art. 4: Calculado sobre base de categoría (sin antigüedad). ¡Verificar base CCT!
         val adicionalCompAnualArt4Monto = salarioBasicoCategoria * COMP_ANUAL_ART4_PORCENTAJE
 
-        // 5. Subtotal Bruto Remunerativo: Suma de todos los conceptos sujetos a descuentos de ley.
+        // ****** INICIO DE LA CORRECCIÓN ******
+
+        // 5. Calcular Valor Hora para Extras (basado en jornal de categoría)
+        val jornal = salarioBasicoCategoria / DIAS_MES_JORNAL // Valor del día de trabajo
+        val valorHoraOrdinaria = jornal / HORAS_JORNAL        // Valor de la hora normal
+
+        // Calcular Pago por Horas Extras para que sea REMUNERATIVO
+        val pagoExtra50Monto = valorHoraOrdinaria * horasExtra50 * FACTOR_EXTRA_50
+        val pagoExtra100Monto = valorHoraOrdinaria * horasExtra100 * FACTOR_EXTRA_100
+
+        // 6. Subtotal Bruto Remunerativo: Suma de todos los conceptos sujetos a descuentos de ley (INCLUYENDO EXTRAS)
         val subtotalBrutoRemunerativo = baseConAntiguedad +
                 adicionalPresentismoMonto +
                 adicionalCompAnualArt4Monto +
                 ADICIONAL_INCENTIVO_TRIVENTO_1 + // Asumiendo que son remunerativos
-                ADICIONAL_INCENTIVO_TRIVENTO_2  // Asumiendo que son remunerativos
+                ADICIONAL_INCENTIVO_TRIVENTO_2 + // Asumiendo que son remunerativos
+                pagoExtra50Monto +               // AHORA SE SUMA AQUÍ
+                pagoExtra100Monto                // AHORA SE SUMA AQUÍ
 
         // --- Cálculo de Descuentos ---
-        // 6. Descuentos Específicos CCT (sobre bases particulares, ¡verificar CCT!)
+        // 7. Descuentos Específicos CCT (sobre bases particulares, ¡verificar CCT!)
         val descuentoSepelioMonto = SALARIO_BASE_OFICIAL * DESCUENTO_SEPELIO_PORCENTAJE // Sobre base oficial
         val aporteSolidarioMonto = salarioBasicoCategoria * APORTE_SOLIDARIO_PORCENTAJE   // Sobre base categoría
 
-        // 7. Descuentos de Ley (sobre el Subtotal Bruto Remunerativo)
+        // 8. Descuentos de Ley (sobre el NUEVO Subtotal Bruto Remunerativo)
         val descuentoJubilacionMonto = subtotalBrutoRemunerativo * DESCUENTO_JUBILACION_PORCENTAJE
         val descuentoLey19032Monto = subtotalBrutoRemunerativo * DESCUENTO_LEY_19032_PORCENTAJE
         val descuentoObraSocialMonto = subtotalBrutoRemunerativo * DESCUENTO_OBRA_SOCIAL_PORCENTAJE
 
-        // 8. Total Descuentos de Ley (sobre Remunerativo)
+        // 9. Total Descuentos de Ley (sobre Remunerativo)
         val totalDescuentosRemunerativos = descuentoJubilacionMonto +
                 descuentoLey19032Monto +
                 descuentoObraSocialMonto +
                 aporteSolidarioMonto // Incluir aporte solidario aquí si es sobre remunerativo bruto, si no, ajustar.
 
-        // 9. Subtotal Neto Remunerativo: Lo que queda del bruto remunerativo tras descuentos de ley.
+        // 10. Subtotal Neto Remunerativo: Lo que queda del bruto remunerativo tras descuentos de ley.
         val subtotalNetoRemunerativo = subtotalBrutoRemunerativo - totalDescuentosRemunerativos
 
-        // --- Cálculo de Adicionales No Remunerativos y Horas Extras ---
-        // 10. Calcular Valor Hora para Extras (basado en jornal de categoría)
-        val jornal = salarioBasicoCategoria / DIAS_MES_JORNAL // Valor del día de trabajo
-        val valorHoraOrdinaria = jornal / HORAS_JORNAL        // Valor de la hora normal
-
-        // 11. Calcular Pago por Horas Extras (estos pagos suelen ser no remunerativos o tener tratamiento especial, ¡verificar CCT!)
-        val pagoExtra50Monto = valorHoraOrdinaria * horasExtra50 * FACTOR_EXTRA_50
-        val pagoExtra100Monto = valorHoraOrdinaria * horasExtra100 * FACTOR_EXTRA_100
-
         // --- Cálculo del Salario Neto Final ---
-        // 12. Suma Final de Bolsillo: Neto Remunerativo + No Remunerativos + Extras - Otros descuentos.
-        val salarioFinalNetoCalculado = subtotalNetoRemunerativo +  // Lo que quedó del remunerativo
+        // 11. Suma Final de Bolsillo: Neto Remunerativo + No Remunerativos - Otros descuentos.
+        val salarioFinalNetoCalculado = subtotalNetoRemunerativo +  // Lo que quedó del remunerativo (extras ya incluidas)
                 ADICIONAL_NO_REMUNERATIVO + // Suma adicional no remunerativo CCT
-                REFRIGERIO +              // Suma refrigerio (asumiendo no remunerativo, ¡verificar!)
-                pagoExtra50Monto +        // Suma pago extras 50%
-                pagoExtra100Monto -       // Suma pago extras 100%
+                REFRIGERIO -              // Suma refrigerio (asumiendo no remunerativo, ¡verificar!)
                 descuentoSepelioMonto     // Resta descuento sepelio (si se aplica al final)
+        // LAS HORAS EXTRAS YA NO SE SUMAN AQUÍ
+
+        // ****** FIN DE LA CORRECCIÓN ******
 
         // --- Actualizar el StateFlow con el Desglose Completo ---
         _salarioBreakdown.value = SalarioBreakdown(
@@ -159,16 +163,16 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
             adicionalCompAnualArt4 = adicionalCompAnualArt4Monto,
             adicionalIncentivoTrivento = ADICIONAL_INCENTIVO_TRIVENTO_1,
             adicionalIncentivoTrivento2 = ADICIONAL_INCENTIVO_TRIVENTO_2,
-            subtotalBrutoRemunerativo = subtotalBrutoRemunerativo,
+            subtotalBrutoRemunerativo = subtotalBrutoRemunerativo, // Este valor ahora es mayor
             descuentoSepelio = descuentoSepelioMonto,
             descuentoAporteSolidario = aporteSolidarioMonto,
-            // Agrupa los descuentos de ley para mostrarlos juntos
+            // Agrupa los descuentos de ley para mostrarlos juntos (ahora calculados sobre un bruto mayor)
             descuentoJubilacionLey = descuentoJubilacionMonto + descuentoLey19032Monto + descuentoObraSocialMonto,
             subtotalNetoRemunerativo = subtotalNetoRemunerativo,
             adicionalNoRemunerativo = ADICIONAL_NO_REMUNERATIVO,
             adicionalRefrigerio = REFRIGERIO,
-            pagoExtra50 = pagoExtra50Monto,
-            pagoExtra100 = pagoExtra100Monto,
+            pagoExtra50 = pagoExtra50Monto, // Se mantiene para mostrar el desglose
+            pagoExtra100 = pagoExtra100Monto, // Se mantiene para mostrar el desglose
             // Asegura que el salario final no sea negativo
             salarioFinalNeto = max(0.0, salarioFinalNetoCalculado)
         )
