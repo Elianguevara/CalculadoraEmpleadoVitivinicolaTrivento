@@ -36,15 +36,16 @@ data class SalarioBreakdown(
 @HiltViewModel
 class SalarioViewModel @Inject constructor() : ViewModel() {
 
+
     // --- Constantes de Cálculo ---
     // Es FUNDAMENTAL verificar estos valores contra el Convenio Colectivo de Trabajo (CCT) vigente.
     private companion object {
         // Valores Base y Fijos (¡Actualizar según CCT y acuerdos paritarios!)
-        const val SALARIO_BASE_OFICIAL = 361554.0        // Salario básico de referencia (Obrero Común sin antigüedad)
-        const val ADICIONAL_NO_REMUNERATIVO = 156702.0   // Adicional No Remunerativo según CCT
-        const val REFRIGERIO = 125270.0                // Adicional por Refrigerio según CCT
+        const val SALARIO_BASE_OFICIAL = 377350.0        // Salario básico de referencia (Obrero Común sin antigüedad)
+        const val ADICIONAL_NO_REMUNERATIVO = 170806.0   // Adicional No Remunerativo según CCT
+        const val REFRIGERIO = 132497.0                // Adicional por Refrigerio según CCT
         const val ADICIONAL_INCENTIVO_TRIVENTO_1 = 25000.0 // Adicional específico Trivento 1
-        const val ADICIONAL_INCENTIVO_TRIVENTO_2 = 24000.0 // Adicional específico Trivento 2
+        const val ADICIONAL_INCENTIVO_TRIVENTO_2 = 30000.0 // Adicional específico Trivento 2
 
         // Porcentajes (¡Verificar base de cálculo para cada uno según CCT!)
         const val PRESENTISMO_PORCENTAJE = 0.05         // 5% sobre SALARIO_BASE_OFICIAL
