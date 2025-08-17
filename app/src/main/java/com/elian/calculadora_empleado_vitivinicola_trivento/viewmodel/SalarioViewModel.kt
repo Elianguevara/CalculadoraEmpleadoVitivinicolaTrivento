@@ -30,7 +30,11 @@ data class SalarioBreakdown(
     val adicionalRefrigerio: Double = 0.0,         // Monto adicional por refrigerio (CCT)
     val pagoExtra50: Double = 0.0,                 // Monto a pagar por horas extras al 50%
     val pagoExtra100: Double = 0.0,                // Monto a pagar por horas extras al 100%
-    val salarioFinalNeto: Double = 0.0             // El monto final de bolsillo
+    val salarioFinalNeto: Double = 0.0,             // El monto final de bolsillo
+    // --- INICIO DE LA MODIFICACIÓN 1: Añadir campos para valor neto de extras ---
+    val pagoExtra50Neto: Double = 0.0,      // Valor de bolsillo de las horas al 50%
+    val pagoExtra100Neto: Double = 0.0      // Valor de bolsillo de las horas al 100%
+    // --- FIN DE LA MODIFICACIÓN 1 ---
 )
 
 @HiltViewModel
@@ -41,9 +45,9 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
     // Es FUNDAMENTAL verificar estos valores contra el Convenio Colectivo de Trabajo (CCT) vigente.
     private companion object {
         // Valores Base y Fijos (¡Actualizar según CCT y acuerdos paritarios!)
-        const val SALARIO_BASE_OFICIAL = 377350.0        // Salario básico de referencia (Obrero Común sin antigüedad)
-        const val ADICIONAL_NO_REMUNERATIVO = 170806.0   // Adicional No Remunerativo según CCT
-        const val REFRIGERIO = 132497.0                // Adicional por Refrigerio según CCT
+        const val SALARIO_BASE_OFICIAL = 393146.0        // Salario básico de referencia (Obrero Común sin antigüedad)
+        const val ADICIONAL_NO_REMUNERATIVO = 164976.0   // Adicional No Remunerativo según CCT
+        const val REFRIGERIO = 134906.0                // Adicional por Refrigerio según CCT
         const val ADICIONAL_INCENTIVO_TRIVENTO_1 = 25000.0 // Adicional específico Trivento 1
         const val ADICIONAL_INCENTIVO_TRIVENTO_2 = 30000.0 // Adicional específico Trivento 2
 
@@ -66,6 +70,12 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
            *** DEBES VALIDAR ESTO ***: ¿El 17% era una simplificación correcta o los descuentos deben calcularse individualmente sobre el bruto remunerativo?
            ¿Hay algún otro descuento específico del CCT vitivinícola o de Trivento?
         */
+        // --- INICIO DE LA MODIFICACIÓN 2: Constante para descuentos totales ---
+        // Suma de los descuentos de ley que se aplican a todo lo remunerativo.
+        // Nota: No incluye el Aporte Solidario porque ese tiene una base de cálculo diferente.
+        const val TOTAL_DESCUENTOS_LEY_PORCENTAJE = DESCUENTO_JUBILACION_PORCENTAJE +
+                DESCUENTO_LEY_19032_PORCENTAJE + DESCUENTO_OBRA_SOCIAL_PORCENTAJE // Esto da 0.17 (17%)
+        // --- FIN DE LA MODIFICACIÓN 2 ---
 
         // Cálculo Horas/Jornal (Según CCT, usualmente 200hs mensuales / 25 jornales)
         const val DIAS_MES_JORNAL = 25.0 // Días teóricos para calcular jornal
@@ -117,6 +127,12 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
         val pagoExtra50Monto = valorHoraOrdinaria * horasExtra50 * FACTOR_EXTRA_50
         val pagoExtra100Monto = valorHoraOrdinaria * horasExtra100 * FACTOR_EXTRA_100
 
+        // --- INICIO DE LA MODIFICACIÓN 3: Calcular el valor NETO de las horas extra ---
+        // Se le aplica el porcentaje de descuentos de ley (17%) al valor bruto de las horas.
+        val pagoExtra50NetoMonto = pagoExtra50Monto * (1 - TOTAL_DESCUENTOS_LEY_PORCENTAJE)
+        val pagoExtra100NetoMonto = pagoExtra100Monto * (1 - TOTAL_DESCUENTOS_LEY_PORCENTAJE)
+        // --- FIN DE LA MODIFICACIÓN 3 ---
+
         // 6. Subtotal Bruto Remunerativo: Suma de todos los conceptos sujetos a descuentos de ley (INCLUYENDO EXTRAS)
         val subtotalBrutoRemunerativo = baseConAntiguedad +
                 adicionalPresentismoMonto +
@@ -155,7 +171,7 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
 
         // ****** FIN DE LA CORRECCIÓN ******
 
-        // --- Actualizar el StateFlow con el Desglose Completo ---
+        // --- INICIO DE LA MODIFICACIÓN 4: Actualizar el StateFlow con los nuevos valores ---
         _salarioBreakdown.value = SalarioBreakdown(
             salarioBaseCalculado = baseConAntiguedad,
             adicionalPresentismo = adicionalPresentismoMonto,
@@ -163,18 +179,20 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
             adicionalCompAnualArt4 = adicionalCompAnualArt4Monto,
             adicionalIncentivoTrivento = ADICIONAL_INCENTIVO_TRIVENTO_1,
             adicionalIncentivoTrivento2 = ADICIONAL_INCENTIVO_TRIVENTO_2,
-            subtotalBrutoRemunerativo = subtotalBrutoRemunerativo, // Este valor ahora es mayor
+            subtotalBrutoRemunerativo = subtotalBrutoRemunerativo,
             descuentoSepelio = descuentoSepelioMonto,
             descuentoAporteSolidario = aporteSolidarioMonto,
-            // Agrupa los descuentos de ley para mostrarlos juntos (ahora calculados sobre un bruto mayor)
             descuentoJubilacionLey = descuentoJubilacionMonto + descuentoLey19032Monto + descuentoObraSocialMonto,
             subtotalNetoRemunerativo = subtotalNetoRemunerativo,
             adicionalNoRemunerativo = ADICIONAL_NO_REMUNERATIVO,
             adicionalRefrigerio = REFRIGERIO,
-            pagoExtra50 = pagoExtra50Monto, // Se mantiene para mostrar el desglose
-            pagoExtra100 = pagoExtra100Monto, // Se mantiene para mostrar el desglose
-            // Asegura que el salario final no sea negativo
-            salarioFinalNeto = max(0.0, salarioFinalNetoCalculado)
+            pagoExtra50 = pagoExtra50Monto,
+            pagoExtra100 = pagoExtra100Monto,
+            salarioFinalNeto = max(0.0, salarioFinalNetoCalculado),
+            // Pasamos los valores netos calculados
+            pagoExtra50Neto = pagoExtra50NetoMonto,
+            pagoExtra100Neto = pagoExtra100NetoMonto
         )
+        // --- FIN DE LA MODIFICACIÓN 4 ---
     }
 }

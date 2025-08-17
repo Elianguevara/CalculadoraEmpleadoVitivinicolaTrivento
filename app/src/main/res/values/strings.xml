@@ -3,6 +3,7 @@
     <string name="app_name">Calculadora Salario</string>
 
     <string name="app_title">Calculadora Salario Trivento</string>
+    <string name="app_subtitle">Convenio Vitivinícola</string>
 
     <string name="section_inputs">Ingresar Datos</string>
     <string name="section_results">Desglose del Salario</string>
@@ -28,7 +29,9 @@
     <string name="result_meal_allowance">Refrigerio</string>
     <string name="result_overtime_50">Pago Horas Extras 50%</string>
     <string name="result_overtime_100">Pago Horas Extras 100%</string>
+    <string name="result_overtime_net">"  ↳ de bolsillo"</string>
     <string name="result_final_net">SALARIO NETO FINAL</string>
 
     <string name="author_name">By Elian Guevara</string>
+
 </resources>

@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.viewmodel.compose)
+    implementation(libs.androidx.material.icons.extended)
 
     // Hilt (inyección de dependencias)
     implementation(libs.hilt.android)
