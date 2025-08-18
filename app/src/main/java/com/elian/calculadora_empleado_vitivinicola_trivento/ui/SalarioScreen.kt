@@ -17,11 +17,11 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider // <-- CAMBIO AQUÍ
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -83,7 +83,6 @@ fun SalarioScreen(viewModel: SalarioViewModel = viewModel()) {
     CalculadoraSalarioTheme {
         Scaffold(
             topBar = {
-                // **CAMBIO: Añadido subtítulo a la TopAppBar**
                 CenterAlignedTopAppBar(
                     title = {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -162,7 +161,7 @@ fun SalarioScreen(viewModel: SalarioViewModel = viewModel()) {
                                         }
                                     )
                                     if (index < categorias.lastIndex) {
-                                        Divider(
+                                        HorizontalDivider( // <-- CAMBIO AQUÍ
                                             modifier = Modifier.padding(horizontal = 16.dp),
                                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
                                         )
@@ -227,7 +226,7 @@ fun SalarioScreen(viewModel: SalarioViewModel = viewModel()) {
                                         }
                                     )
                                     if (index < escalasAntiguedad.indices.last) {
-                                        Divider(
+                                        HorizontalDivider( // <-- CAMBIO AQUÍ
                                             modifier = Modifier.padding(horizontal = 16.dp),
                                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
                                         )
@@ -238,7 +237,7 @@ fun SalarioScreen(viewModel: SalarioViewModel = viewModel()) {
                     }
                 }
 
-                // ... (El resto del código sigue exactamente igual)
+                // ... (El resto del código sigue exactamente igual, pero con HorizontalDivider)
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = horasExtra100Text,
@@ -279,7 +278,8 @@ fun SalarioScreen(viewModel: SalarioViewModel = viewModel()) {
                 Spacer(modifier = Modifier.height(24.dp))
                 if (salarioInfo.salarioFinalNeto > 0.0 || horasExtra100Text.isNotEmpty() || horasExtra50Text.isNotEmpty() || salarioInfo.subtotalBrutoRemunerativo > 0.0 ) {
                     Text(stringResource(R.string.section_results), style = MaterialTheme.typography.titleMedium)
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) // <-- CAMBIO AQUÍ
+
                     BreakdownItem(label = stringResource(R.string.result_base_salary), value = salarioInfo.salarioBaseCalculado)
                     BreakdownItem(label = stringResource(R.string.result_seniority_bonus), value = salarioInfo.adicionalAntiguedad)
                     BreakdownItem(label = stringResource(R.string.result_presenteeism), value = salarioInfo.adicionalPresentismo)
@@ -299,7 +299,8 @@ fun SalarioScreen(viewModel: SalarioViewModel = viewModel()) {
                     BreakdownItem(label = "  ↳ de bolsillo", value = salarioInfo.pagoExtra50Neto)
                     BreakdownItem(label = stringResource(R.string.result_overtime_100), value = salarioInfo.pagoExtra100)
                     BreakdownItem(label = "  ↳ de bolsillo", value = salarioInfo.pagoExtra100Neto)
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) // <-- CAMBIO AQUÍ
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
