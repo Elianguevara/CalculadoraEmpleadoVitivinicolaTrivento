@@ -8,94 +8,68 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlin.math.max // Para evitar valores negativos
+import kotlin.math.max
 
 /**
  * Data class para almacenar el desglose detallado del cálculo del salario.
- * Permite mostrar cada componente en la UI para mayor transparencia.
+ * Incluye todos los conceptos remunerativos, no remunerativos y descuentos
+ * según el CCT Nº 154/91 - Obreros de Viña (Octubre 2025).
  */
 data class SalarioBreakdown(
-    val salarioBaseCalculado: Double = 0.0,        // Salario básico (cat * antig)
-    val adicionalPresentismo: Double = 0.0,        // Monto adicional por presentismo
-    val adicionalAntiguedad: Double = 0.0,         // Monto adicional por antigüedad (diferencia sobre base)
-    val adicionalCompAnualArt4: Double = 0.0,      // Monto adicional Art. 4 CCT
-    val adicionalIncentivoTrivento: Double = 0.0,  // Monto adicional Incentivo 1 Trivento
-    val adicionalIncentivoTrivento2: Double = 0.0, // Monto adicional Incentivo 2 Trivento
-    val subtotalBrutoRemunerativo: Double = 0.0,   // Suma de conceptos remunerativos brutos
-    val descuentoSepelio: Double = 0.0,            // Descuento por subsidio de sepelio
-    val descuentoAporteSolidario: Double = 0.0,    // Descuento por aporte solidario (CCT)
-    val descuentoJubilacionLey: Double = 0.0,      // Descuentos de ley (Jubilación + Ley 19032 + Obra Social)
-    val subtotalNetoRemunerativo: Double = 0.0,    // Bruto remunerativo menos descuentos de ley
-    val adicionalNoRemunerativo: Double = 0.0,     // Monto adicional no remunerativo (CCT)
-    val adicionalRefrigerio: Double = 0.0,         // Monto adicional por refrigerio (CCT)
-    val pagoExtra50: Double = 0.0,                 // Monto a pagar por horas extras al 50%
-    val pagoExtra100: Double = 0.0,                // Monto a pagar por horas extras al 100%
-    val salarioFinalNeto: Double = 0.0,             // El monto final de bolsillo
-    // --- INICIO DE LA MODIFICACIÓN 1: Añadir campos para valor neto de extras ---
-    val pagoExtra50Neto: Double = 0.0,      // Valor de bolsillo de las horas al 50%
-    val pagoExtra100Neto: Double = 0.0      // Valor de bolsillo de las horas al 100%
-    // --- FIN DE LA MODIFICACIÓN 1 ---
+    val salarioBaseCalculado: Double = 0.0,
+    val adicionalPresentismo: Double = 0.0,
+    val adicionalAntiguedad: Double = 0.0,
+    val adicionalCompAnualArt4: Double = 0.0,
+    val adicionalIncentivoTrivento: Double = 0.0,
+    val adicionalIncentivoTrivento2: Double = 0.0,
+    val subtotalBrutoRemunerativo: Double = 0.0,
+    val descuentoSepelio: Double = 0.0,
+    val descuentoAporteSolidario: Double = 0.0,
+    val descuentoJubilacionLey: Double = 0.0,
+    val subtotalNetoRemunerativo: Double = 0.0,
+    val adicionalNoRemunerativo: Double = 0.0,
+    val adicionalRefrigerio: Double = 0.0,
+    val pagoExtra50: Double = 0.0,
+    val pagoExtra100: Double = 0.0,
+    val salarioFinalNeto: Double = 0.0,
+    val pagoExtra50Neto: Double = 0.0,
+    val pagoExtra100Neto: Double = 0.0
 )
 
 @HiltViewModel
 class SalarioViewModel @Inject constructor() : ViewModel() {
 
+    companion object {
+        // --- Datos base del Convenio 154/91 (Octubre 2025) ---
+        const val SALARIO_BASE_OFICIAL = 401009.0       // Obrero Común sin antigüedad
+        const val ADICIONAL_NO_REMUNERATIVO = 172776.0  // Suma mensual no remunerativa
+        const val REFRIGERIO = 137604.0                 // Valor mensual por refrigerio
+        const val ADICIONAL_INCENTIVO_TRIVENTO_1 = 30000.0
+        const val ADICIONAL_INCENTIVO_TRIVENTO_2 = 35000.0
 
-    // --- Constantes de Cálculo ---
-    // Es FUNDAMENTAL verificar estos valores contra el Convenio Colectivo de Trabajo (CCT) vigente.
-    private companion object {
-        // Valores Base y Fijos (¡Actualizar según CCT y acuerdos paritarios!)
-        const val SALARIO_BASE_OFICIAL = 393146.0        // Salario básico de referencia (Obrero Común sin antigüedad)
-        const val ADICIONAL_NO_REMUNERATIVO = 164976.0   // Adicional No Remunerativo según CCT
-        const val REFRIGERIO = 134906.0                // Adicional por Refrigerio según CCT
-        const val ADICIONAL_INCENTIVO_TRIVENTO_1 = 25000.0 // Adicional específico Trivento 1
-        const val ADICIONAL_INCENTIVO_TRIVENTO_2 = 30000.0 // Adicional específico Trivento 2
+        // --- Porcentajes oficiales ---
+        const val PRESENTISMO_PORCENTAJE = 0.05
+        const val COMP_ANUAL_ART4_PORCENTAJE = 0.0532
+        const val APORTE_SOLIDARIO_PORCENTAJE = 0.015   // 1,5% CCT
+        // Descuentos de ley estándar (total 17%)
+        const val DESCUENTO_JUBILACION_PORCENTAJE = 0.11
+        const val DESCUENTO_LEY_19032_PORCENTAJE = 0.03
+        const val DESCUENTO_OBRA_SOCIAL_PORCENTAJE = 0.03
+        const val TOTAL_DESCUENTOS_LEY_PORCENTAJE =
+            DESCUENTO_JUBILACION_PORCENTAJE + DESCUENTO_LEY_19032_PORCENTAJE + DESCUENTO_OBRA_SOCIAL_PORCENTAJE
 
-        // Porcentajes (¡Verificar base de cálculo para cada uno según CCT!)
-        const val PRESENTISMO_PORCENTAJE = 0.05         // 5% sobre SALARIO_BASE_OFICIAL
-        const val COMP_ANUAL_ART4_PORCENTAJE = 0.0532   // 5.32% sobre (SALARIO_BASE_OFICIAL * categoria.factor) - Confirmar base CCT
-        const val DESCUENTO_SEPELIO_PORCENTAJE = 0.021545  // 1.6% sobre SALARIO_BASE_OFICIAL - Confirmar base CCT
-        const val APORTE_SOLIDARIO_PORCENTAJE = 0.015   // 1.5% sobre (SALARIO_BASE_OFICIAL * categoria.factor) - Confirmar base CCT
-
-        // Descuentos de Ley Estándar (¡Estos son generales, verificar si CCT o situación particular aplica otros!)
-        const val DESCUENTO_JUBILACION_PORCENTAJE = 0.11    // 11% sobre Bruto Remunerativo
-        const val DESCUENTO_LEY_19032_PORCENTAJE = 0.03     // 3% sobre Bruto Remunerativo (INSSJP - PAMI)
-        const val DESCUENTO_OBRA_SOCIAL_PORCENTAJE = 0.03   // 3% sobre Bruto Remunerativo
-
-        /* NOTA IMPORTANTE SOBRE DESCUENTOS:
-           Tu código original tenía un `descuentoFinal = 0.17` (17%) aplicado sobre un subtotal.
-           Esto es INUSUAL como descuento de ley estándar en Argentina. Los descuentos habituales son los detallados arriba
-           (Jubilación 11%, Ley 19032 3%, Obra Social 3% = 17% TOTAL sobre REMUNERATIVO BRUTO).
-           He reemplazado tu 17% fijo por estos descuentos estándar.
-           *** DEBES VALIDAR ESTO ***: ¿El 17% era una simplificación correcta o los descuentos deben calcularse individualmente sobre el bruto remunerativo?
-           ¿Hay algún otro descuento específico del CCT vitivinícola o de Trivento?
-        */
-        // --- INICIO DE LA MODIFICACIÓN 2: Constante para descuentos totales ---
-        // Suma de los descuentos de ley que se aplican a todo lo remunerativo.
-        // Nota: No incluye el Aporte Solidario porque ese tiene una base de cálculo diferente.
-        const val TOTAL_DESCUENTOS_LEY_PORCENTAJE = DESCUENTO_JUBILACION_PORCENTAJE +
-                DESCUENTO_LEY_19032_PORCENTAJE + DESCUENTO_OBRA_SOCIAL_PORCENTAJE // Esto da 0.17 (17%)
-        // --- FIN DE LA MODIFICACIÓN 2 ---
-
-        // Cálculo Horas/Jornal (Según CCT, usualmente 200hs mensuales / 25 jornales)
-        const val DIAS_MES_JORNAL = 25.0 // Días teóricos para calcular jornal
-        const val HORAS_JORNAL = 8.0     // Horas por jornal
-        const val FACTOR_EXTRA_50 = 1.5  // Multiplicador para hora extra al 50%
-        const val FACTOR_EXTRA_100 = 2.0 // Multiplicador para hora extra al 100%
+        // --- Parámetros de jornada ---
+        const val DIAS_MES_JORNAL = 25.0
+        const val HORAS_JORNAL = 8.0
+        const val FACTOR_EXTRA_50 = 1.5
+        const val FACTOR_EXTRA_100 = 2.0
     }
 
-    // StateFlow para exponer el desglose del salario a la UI
-    private val _salarioBreakdown = MutableStateFlow(SalarioBreakdown()) // Inicializa con valores en 0.0
+    private val _salarioBreakdown = MutableStateFlow(SalarioBreakdown())
     val salarioBreakdown: StateFlow<SalarioBreakdown> = _salarioBreakdown.asStateFlow()
 
     /**
-     * Calcula el salario detallado (bruto, descuentos, netos, extras) basado en los parámetros.
-     * Actualiza el StateFlow `_salarioBreakdown` con el resultado completo.
-     *
-     * @param categoria Objeto Categoria del empleado.
-     * @param antiguedadIndex Índice seleccionado en la lista `escalasAntiguedad`.
-     * @param horasExtra100 Cantidad de horas extras al 100%.
-     * @param horasExtra50 Cantidad de horas extras al 50%.
+     * Calcula el salario completo según el CCT actualizado (Octubre 2025).
      */
     fun calcularSalario(
         categoria: Categoria,
@@ -103,75 +77,55 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
         horasExtra100: Int,
         horasExtra50: Int
     ) {
-        // --- Validaciones y Obtención de Factores ---
-        val factorAntiguedad = escalasAntiguedad.getOrNull(antiguedadIndex) ?: 1.0 // Factor de antigüedad, default 1.0 si índice es inválido
-        val salarioBasicoCategoria = SALARIO_BASE_OFICIAL * categoria.factor // Salario base según categoría (sin antigüedad)
-
-        // --- Cálculo de Componentes Remunerativos Brutos ---
-        // 1. Salario Base Calculado: Afectado por categoría y antigüedad.
+        // --- Factor de antigüedad según escala oficial ---
+        val factorAntiguedad = escalasAntiguedad.getOrNull(antiguedadIndex) ?: 1.0
+        val salarioBasicoCategoria = SALARIO_BASE_OFICIAL * categoria.factor
         val baseConAntiguedad = salarioBasicoCategoria * factorAntiguedad
-        // 2. Adicional por Antigüedad: La diferencia que agrega la antigüedad sobre el base de categoría.
         val adicionalAntiguedadMonto = baseConAntiguedad - salarioBasicoCategoria
-        // 3. Adicional por Presentismo: Calculado sobre el salario base oficial (sin categoría ni antigüedad). ¡Verificar base CCT!
+
+        // --- Adicionales remunerativos ---
         val adicionalPresentismoMonto = SALARIO_BASE_OFICIAL * PRESENTISMO_PORCENTAJE
-        // 4. Adicional Compensación Anual Art. 4: Calculado sobre base de categoría (sin antigüedad). ¡Verificar base CCT!
         val adicionalCompAnualArt4Monto = salarioBasicoCategoria * COMP_ANUAL_ART4_PORCENTAJE
 
-        // ****** INICIO DE LA CORRECCIÓN ******
-
-        // 5. Calcular Valor Hora para Extras (basado en jornal de categoría)
-        val jornal = salarioBasicoCategoria / DIAS_MES_JORNAL // Valor del día de trabajo
-        val valorHoraOrdinaria = jornal / HORAS_JORNAL        // Valor de la hora normal
-
-        // Calcular Pago por Horas Extras para que sea REMUNERATIVO
+        // --- Cálculo de horas extras ---
+        val jornal = salarioBasicoCategoria / DIAS_MES_JORNAL
+        val valorHoraOrdinaria = jornal / HORAS_JORNAL
         val pagoExtra50Monto = valorHoraOrdinaria * horasExtra50 * FACTOR_EXTRA_50
         val pagoExtra100Monto = valorHoraOrdinaria * horasExtra100 * FACTOR_EXTRA_100
-
-        // --- INICIO DE LA MODIFICACIÓN 3: Calcular el valor NETO de las horas extra ---
-        // Se le aplica el porcentaje de descuentos de ley (17%) al valor bruto de las horas.
         val pagoExtra50NetoMonto = pagoExtra50Monto * (1 - TOTAL_DESCUENTOS_LEY_PORCENTAJE)
         val pagoExtra100NetoMonto = pagoExtra100Monto * (1 - TOTAL_DESCUENTOS_LEY_PORCENTAJE)
-        // --- FIN DE LA MODIFICACIÓN 3 ---
 
-        // 6. Subtotal Bruto Remunerativo: Suma de todos los conceptos sujetos a descuentos de ley (INCLUYENDO EXTRAS)
+        // --- Subtotal bruto remunerativo ---
         val subtotalBrutoRemunerativo = baseConAntiguedad +
                 adicionalPresentismoMonto +
                 adicionalCompAnualArt4Monto +
-                ADICIONAL_INCENTIVO_TRIVENTO_1 + // Asumiendo que son remunerativos
-                ADICIONAL_INCENTIVO_TRIVENTO_2 + // Asumiendo que son remunerativos
-                pagoExtra50Monto +               // AHORA SE SUMA AQUÍ
-                pagoExtra100Monto                // AHORA SE SUMA AQUÍ
+                ADICIONAL_INCENTIVO_TRIVENTO_1 +
+                ADICIONAL_INCENTIVO_TRIVENTO_2 +
+                pagoExtra50Monto +
+                pagoExtra100Monto
 
-        // --- Cálculo de Descuentos ---
-        // 7. Descuentos Específicos CCT (sobre bases particulares, ¡verificar CCT!)
-        val descuentoSepelioMonto = SALARIO_BASE_OFICIAL * DESCUENTO_SEPELIO_PORCENTAJE // Sobre base oficial
-        val aporteSolidarioMonto = salarioBasicoCategoria * APORTE_SOLIDARIO_PORCENTAJE   // Sobre base categoría
+        // --- Descuentos ---
+        val descuentoSepelioMonto = (SALARIO_BASE_OFICIAL / DIAS_MES_JORNAL) * 0.4 // CCT 2025: 40% de un jornal
+        val aporteSolidarioMonto = salarioBasicoCategoria * APORTE_SOLIDARIO_PORCENTAJE
 
-        // 8. Descuentos de Ley (sobre el NUEVO Subtotal Bruto Remunerativo)
         val descuentoJubilacionMonto = subtotalBrutoRemunerativo * DESCUENTO_JUBILACION_PORCENTAJE
         val descuentoLey19032Monto = subtotalBrutoRemunerativo * DESCUENTO_LEY_19032_PORCENTAJE
         val descuentoObraSocialMonto = subtotalBrutoRemunerativo * DESCUENTO_OBRA_SOCIAL_PORCENTAJE
 
-        // 9. Total Descuentos de Ley (sobre Remunerativo)
         val totalDescuentosRemunerativos = descuentoJubilacionMonto +
                 descuentoLey19032Monto +
                 descuentoObraSocialMonto +
-                aporteSolidarioMonto // Incluir aporte solidario aquí si es sobre remunerativo bruto, si no, ajustar.
+                aporteSolidarioMonto
 
-        // 10. Subtotal Neto Remunerativo: Lo que queda del bruto remunerativo tras descuentos de ley.
         val subtotalNetoRemunerativo = subtotalBrutoRemunerativo - totalDescuentosRemunerativos
 
-        // --- Cálculo del Salario Neto Final ---
-        // 11. Suma Final de Bolsillo: Neto Remunerativo + No Remunerativos - Otros descuentos.
-        val salarioFinalNetoCalculado = subtotalNetoRemunerativo +  // Lo que quedó del remunerativo (extras ya incluidas)
-                ADICIONAL_NO_REMUNERATIVO + // Suma adicional no remunerativo CCT
-                REFRIGERIO -              // Suma refrigerio (asumiendo no remunerativo, ¡verificar!)
-                descuentoSepelioMonto     // Resta descuento sepelio (si se aplica al final)
-        // LAS HORAS EXTRAS YA NO SE SUMAN AQUÍ
+        // --- Cálculo del salario final de bolsillo ---
+        val salarioFinalNetoCalculado = subtotalNetoRemunerativo +
+                ADICIONAL_NO_REMUNERATIVO +
+                REFRIGERIO -
+                descuentoSepelioMonto
 
-        // ****** FIN DE LA CORRECCIÓN ******
-
-        // --- INICIO DE LA MODIFICACIÓN 4: Actualizar el StateFlow con los nuevos valores ---
+        // --- Actualizar flujo ---
         _salarioBreakdown.value = SalarioBreakdown(
             salarioBaseCalculado = baseConAntiguedad,
             adicionalPresentismo = adicionalPresentismoMonto,
@@ -189,10 +143,8 @@ class SalarioViewModel @Inject constructor() : ViewModel() {
             pagoExtra50 = pagoExtra50Monto,
             pagoExtra100 = pagoExtra100Monto,
             salarioFinalNeto = max(0.0, salarioFinalNetoCalculado),
-            // Pasamos los valores netos calculados
             pagoExtra50Neto = pagoExtra50NetoMonto,
             pagoExtra100Neto = pagoExtra100NetoMonto
         )
-        // --- FIN DE LA MODIFICACIÓN 4 ---
     }
 }
